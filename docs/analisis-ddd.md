@@ -128,39 +128,7 @@ Los agregados son **entidades con consistencia transaccional**:
 
 ### 2.4. Diagrama de Event Storming (Mermaid)
 
-flowchart TD
-    subgraph Comandos
-        C1[CrearPedido]
-        C2[AsignarPedidoAVehiculo]
-        C3[RegistrarPosicion]
-        C4[RegistrarMantenimiento]
-    end
-    
-    subgraph Agregados
-        A1[Pedido]
-        A2[Vehiculo]
-        A3[Envio]
-        A4[OrdenMantenimiento]
-    end
-    
-    subgraph Eventos
-        E1[PedidoCreado]
-        E2[PedidoAsignado]
-        E3[PosicionActualizada]
-        E4[OrdenMantenimientoRegistrada]
-        E5[PedidoEntregado]
-    end
-    
-    C1 -->|genera| E1
-    E1 -->|dispara| C2
-    C2 -->|genera| E2
-    C3 -->|genera| E3
-    C4 -->|genera| E4
-    E5 -->|finaliza| A3
-    
-    E2 -->|actualiza| A3
-    E3 -->|actualiza| A2
-    E4 -->|asocia| A4
+![Diagrama de Event Storming](docs/images/event_storming.png)
 
 ## 3. Identificación de dominios
 
@@ -383,7 +351,12 @@ Para cada contexto se define: **responsabilidad** y **lenguaje ubicuo** (mínimo
 | **Batch** | Agrupación de múltiples resolvers para evitar N+1 queries. |
 | **Federation** | Composición de esquemas de múltiples servicios GraphQL (opcional). |
 
+
+
 ## 5. Context Map (Mapa de relaciones entre contextos)
+
+![Context Map](docs/images/context_map.png)
+
 
 ### 5.1. Tabla de patrones de relación
 
@@ -463,7 +436,6 @@ demostrando la viabilidad de la arquitectura propuesta.
 ---
 
 **Firmado**:  
-*Integrante A - Análisis y arquitectura DDD*  
 *Proyecto LogiFlow - Arquitectura de Software*  
 *Fecha: Mayo 2026*
 
