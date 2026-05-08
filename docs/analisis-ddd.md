@@ -128,23 +128,22 @@ Los agregados son **entidades con consistencia transaccional**:
 
 ### 2.4. Diagrama de Event Storming (Mermaid)
 
-```mermaid
 flowchart TD
-    subgraph "Comandos"
+    subgraph Comandos
         C1[CrearPedido]
         C2[AsignarPedidoAVehiculo]
         C3[RegistrarPosicion]
         C4[RegistrarMantenimiento]
     end
     
-    subgraph "Agregados"
+    subgraph Agregados
         A1[Pedido]
-        A2[Vehículo]
-        A3[Envío]
+        A2[Vehiculo]
+        A3[Envio]
         A4[OrdenMantenimiento]
     end
     
-    subgraph "Eventos"
+    subgraph Eventos
         E1[PedidoCreado]
         E2[PedidoAsignado]
         E3[PosicionActualizada]
@@ -157,10 +156,11 @@ flowchart TD
     C2 -->|genera| E2
     C3 -->|genera| E3
     C4 -->|genera| E4
+    E5 -->|finaliza| A3
     
-    E2 -->|actualiza estado de| A3
-    E3 -->|actualiza ubicación de| A2
-    E4 -->|asocia a| A4
+    E2 -->|actualiza| A3
+    E3 -->|actualiza| A2
+    E4 -->|asocia| A4
 
 ## 3. Identificación de dominios
 
@@ -194,23 +194,302 @@ Son dominios completamente commodity que podrían resolverse con soluciones exte
 | Autenticación y autorización | Autenticación | Keycloak, Auth0, AWS Cognito |
 | Integración con taller mecánico | Taller (SOAP) | Capa anticorrupción sobre SOAP legacy |
 
+
 ### 3.4. Tabla resumen de dominios
 
-```mermaid
-quadrantChart
-    title "Clasificación de Dominios - LogiFlow"
-    x-axis "Específico del negocio" --> "Commodity"
-    y-axis "Bajo impacto estratégico" --> "Alto impacto estratégico"
-    quadrant-1 "Core Domain"
-    quadrant-2 "Genéricos"
-    quadrant-3 "Soporte"
-    quadrant-4 ""
-    "Cadena de entrega": [0.85, 0.9]
-    "Ruteo y Asignación": [0.8, 0.85]
-    "Seguimiento": [0.75, 0.8]
-    "Autenticación": [0.2, 0.6]
-    "Taller SOAP": [0.25, 0.55]
-    "Clientes": [0.5, 0.5]
-    "Flota": [0.55, 0.6]
-    "Facturación": [0.5, 0.45]
-    "Notificaciones": [0.45, 0.4]
+| Dominio | Contexto | Impacto estratégico | Especificidad |
+|:--------|:---------|:-------------------|:--------------|
+| **Core** | Cadena de entrega (Ruteo + Seguimiento) | Alto | Muy específico |
+| **Core** | Ruteo y Asignación | Alto | Muy específico |
+| **Core** | Seguimiento | Alto | Específico |
+| **Genérico** | Autenticación | Medio | Commodity |
+| **Genérico** | Taller SOAP | Medio | Commodity |
+| **Soporte** | Clientes | Bajo | Estándar |
+| **Soporte** | Flota | Medio | Estándar |
+| **Soporte** | Facturación | Bajo | Estándar |
+| **Soporte** | Notificaciones | Bajo | Commodity |
+
+## 4. Bounded Contexts y Lenguaje Ubicuo
+
+Para cada contexto se define: **responsabilidad** y **lenguaje ubicuo** (mínimo 5 términos con su significado específico dentro de ese contexto).
+
+### 4.1. Contexto: Pedidos
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Recepción, validación, gestión de estados y cierre de pedidos. |
+
+**Lenguaje Ubicuo de Pedidos**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Pedido** | Solicitud de envío que contiene origen, destino, paquete y prioridad. |
+| **Origen** | Dirección completa donde se retira el paquete (incluye coordenadas). |
+| **Destino** | Dirección completa donde debe entregarse el paquete. |
+| **Paquete** | Objeto a transportar con peso, dimensiones y tipo de contenido. |
+| **Estado** | Situación del pedido: CREADO, ASIGNADO, EN_RUTA, ENTREGADO, CANCELADO. |
+| **Prioridad** | Nivel de urgencia: NORMAL, ALTA, EXPRESA (afecta asignación y tarifa). |
+
+### 4.2. Contexto: Flota (REST)
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Administración de vehículos y conductores, disponibilidad, características técnicas. |
+
+**Lenguaje Ubicuo de Flota**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Vehículo** | Unidad de transporte con matrícula, tipo, capacidad y estado operativo. |
+| **Conductor** | Persona física habilitada para operar un vehículo, con licencia válida. |
+| **Capacidad (kg)** | Peso máximo en kilogramos que el vehículo puede transportar legalmente. |
+| **Estado** | Situación operativa: DISPONIBLE, EN_SERVICIO, MANTENIMIENTO, INACTIVO. |
+| **Tipo** | Clasificación del vehículo según uso y tamaño: MOTO, AUTO, FURGONETA, CAMION. |
+| **Autonomía (km)** | Distancia máxima que el vehículo puede recorrer con combustible/carga actual. |
+
+### 4.3. Contexto: Taller (SOAP)
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Capa anticorrupción (ACL) para exponer/interactuar con el sistema externo de talleres mecánicos. |
+
+**Lenguaje Ubicuo de Taller**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **OrdenMantenimiento** | Solicitud de servicio técnico para un vehículo en el sistema del taller externo. |
+| **Matrícula** | Identificador único del vehículo según registro vehicular oficial. |
+| **Descripción** | Detalle de la avería, síntoma o servicio requerido. |
+| **Fecha** | Fecha y hora programada o realizada del mantenimiento. |
+| **EstadoMantenimiento** | Situación: PENDIENTE, EN_PROCESO, COMPLETADO, CANCELADO. |
+| **DatosVehiculo** | Información técnica devuelta por el taller: marca, modelo, año, km. |
+
+### 4.4. Contexto: Ruteo y Asignación
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Algoritmo de asignación de pedidos a vehículos, cálculo de rutas óptimas. |
+
+**Lenguaje Ubicuo de Ruteo**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Envío** | Asociación transaccional entre un pedido y un vehículo asignado. |
+| **Ruta** | Secuencia ordenada de paradas que debe realizar un vehículo. |
+| **Parada** | Punto geográfico (origen o destino) dentro de una ruta. |
+| **Horario estimado** | Tiempo calculado de llegada (ETA) a cada parada. |
+| **Kms** | Distancia total planificada de la ruta en kilómetros. |
+| **Factor de optimización** | Métrica de eficiencia: minimizar distancia, tiempo o costo. |
+
+### 4.5. Contexto: Seguimiento
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Ubicación en tiempo real de envíos activos (WebSockets para frontend). |
+
+**Lenguaje Ubicuo de Seguimiento**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Posición** | Coordenadas geográficas (latitud/longitud) actuales del vehículo. |
+| **Velocidad** | Velocidad instantánea del vehículo en km/h. |
+| **Tramo** | Segmento de ruta entre dos paradas consecutivas. |
+| **ETA** | Tiempo estimado de llegada al destino final (Estimated Time of Arrival). |
+| **Evento** | Suceso relevante durante el trayecto (salida, llegada, retraso, incidente). |
+| **Geocerca** | Área virtual que activa eventos al entrar/salir (ej. radio 100m del destino). |
+
+### 4.6. Contexto: Facturación
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Cálculo de costos por envío y emisión de facturas. |
+
+**Lenguaje Ubicuo de Facturación**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Tarifa** | Precio base por tipo de servicio, nivel geográfico y prioridad. |
+| **Trayecto** | Distancia real recorrida entre origen y destino. |
+| **Peso** | Peso efectivo del paquete (kg) que multiplica la tarifa base. |
+| **Recargo** | Incremento por factores: horario nocturno, fin de semana, combustible. |
+| **Factura** | Documento fiscal emitido por servicio completado. |
+| **Saldo** | Crédito pendiente de pago por parte del cliente. |
+
+### 4.7. Contexto: Clientes
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Datos maestros de clientes y cuentas corporativas. |
+
+**Lenguaje Ubicuo de Clientes**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Cliente** | Persona natural o jurídica que contrata servicios de envío. |
+| **Cuenta** | Perfil comercial con datos de contacto, facturación y preferencias. |
+| **Contrato** | Acuerdo comercial que define tarifas especiales y condiciones. |
+| **Saldo** | Monto pendiente de pago o crédito disponible del cliente. |
+| **Segmento** | Clasificación: INDIVIDUAL, CORPORATIVO, PREMIUM, FREQUENTE. |
+| **Direcciones** | Listado de direcciones frecuentes guardadas por el cliente. |
+
+### 4.8. Contexto: Autenticación
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Gestión de usuarios, roles, autenticación y generación de tokens. |
+
+**Lenguaje Ubicuo de Autenticación**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Usuario** | Entidad digital con credenciales para acceder al sistema. |
+| **Rol** | Conjunto de permisos: CLIENTE, CONDUCTOR, OPERADOR, ADMIN. |
+| **Token** | Credencial cifrada (JWT) que autoriza peticiones autenticadas. |
+| **Login** | Proceso de identificación mediante usuario/contraseña. |
+| **Permiso** | Operación específica permitida a un rol (ej. crear_pedido). |
+| **Sesión** | Período de actividad de un usuario autenticado. |
+
+### 4.9. Contexto: Notificaciones
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Consumidor de eventos que envía notificaciones push, email o SMS. |
+
+**Lenguaje Ubicuo de Notificaciones**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Evento** | Suceso de dominio que dispara una notificación. |
+| **Destinatario** | Receptor de la notificación (email, teléfono, device token). |
+| **Canal** | Medio de entrega: EMAIL, SMS, PUSH, WHATSAPP. |
+| **Plantilla** | Formato predefinido del mensaje con placeholders. |
+| **Estado envío** | Resultado del delivery: PENDIENTE, ENVIADO, FALLIDO, LEÍDO. |
+| **Prioridad notificación** | Nivel de urgencia que define canal y retry policy. |
+
+### 4.10. Contexto: GraphQL Gateway (BFF)
+
+| Atributo | Valor |
+|:---------|:------|
+| **Responsabilidad** | Capa BFF (Backend For Frontend) que agrega datos de múltiples servicios y expone GraphQL. |
+
+**Lenguaje Ubicuo de GraphQL Gateway**:
+
+| Término | Significado en este contexto |
+|:--------|:-----------------------------|
+| **Query** | Operación de lectura que solicita campos específicos de uno o más servicios. |
+| **Mutation** | Operación de escritura que modifica datos a través de servicios REST subyacentes. |
+| **Resolver** | Función que traduce una petición GraphQL a llamadas a servicios específicos. |
+| **Schema** | Definición tipada de las queries y mutations disponibles. |
+| **Batch** | Agrupación de múltiples resolvers para evitar N+1 queries. |
+| **Federation** | Composición de esquemas de múltiples servicios GraphQL (opcional). |
+
+## 5. Context Map (Mapa de relaciones entre contextos)
+
+### 5.1. Tabla de patrones de relación
+
+| Patrón de relación | Contextos involucrados | Justificación técnica |
+|:-------------------|:----------------------|:----------------------|
+| **Partnership** | Flota ↔ Ruteo | Ambos contextos evolucionan juntos. La asignación requiere disponibilidad de flota y la flota necesita conocer la carga de ruteo. Cambios coordinados. |
+| **Customer/Supplier** | Pedidos → Ruteo | Ruteo consume pedidos para asignarlos. Pedidos es el proveedor (supplier). Si Pedidos cambia su modelo, Ruteo se adapta. |
+| **Customer/Supplier** | Flota → Ruteo | Ruteo consume disponibilidad de flota. Flota es proveedor. |
+| **Customer/Supplier** | Ruteo → Seguimiento | Ruteo produce los envíos que Seguimiento consume para trackear posiciones. |
+| **Conformist** | Pedidos → Facturación | Facturación se conforma al modelo de eventos de Pedidos. No fuerza sus propios conceptos, se adapta para evitar fricción. |
+| **Anticorruption Layer (ACL)** | Taller ↔ Flota | El contexto Taller actúa como capa anticorrupción entre el modelo externo del taller (caótico, no estandarizado) y el modelo interno de Flota. Traduce, valida y protege. |
+| **Open Host Service (OHS)** | Flota → todos | Flota expone una API REST bien documentada como servicio anfitrión abierto para todos los consumidores internos. |
+| **Published Language** | Eventos asíncronos | Los eventos de dominio (ej. PedidoCreado, PosicionActualizada) actúan como lenguaje publicado que múltiples contextos pueden consumir. |
+| **Separate Ways** | Taller vs Autenticación | No existe relación directa entre estos contextos. Evolucionan de forma completamente independiente. |
+
+---
+
+## 6. Justificación técnica de decisiones arquitectónicas
+
+### 6.1. ¿Por qué microservicios?
+
+| Beneficio | Explicación aplicada a LogiFlow |
+|:----------|:--------------------------------|
+| **Escalabilidad independiente** | El contexto Ruteo (Core Domain) escalará horizontalmente durante Black Friday, mientras que Facturación puede seguir con 1 instancia. Cada servicio escala según su demanda específica. |
+| **Despliegue independiente** | Una mejora en el algoritmo de asignación (Ruteo) se despliega sin tocar Pedidos, Flota o Facturación. No hay "big bang releases". |
+| **Aislamiento de fallos** | Si el servicio de Notificaciones falla, los pedidos siguen creándose y asignándose. Fallos localizados, no caídas generales. |
+| **Equipos autónomos** | Cada contexto delimitado puede tener un equipo propietario (o una persona en este proyecto) con responsabilidad clara. |
+| **Tecnología apropiada** | Ruteo puede usar algoritmos pesados (Python/Go), mientras que Flota es un CRUD simple (Node.js/Spring Boot). Cada servicio elige su stack. |
+| **Frecuencia de cambio diferente** | Facturación cambia 2 veces al año (tarifas). Ruteo cambia cada sprint (optimizaciones). Microservicios reflejan ciclos de vida distintos. |
+
+### 6.2. ¿Por qué RabbitMQ (comunicación asíncrona)?
+
+| Beneficio | Explicación aplicada a LogiFlow |
+|:----------|:--------------------------------|
+| **Desacoplamiento en el tiempo** | Pedidos publica PedidoCreado y no espera a que Facturación o Notificaciones procesen inmediatamente. Si Facturación está caída, el mensaje persiste en la cola. |
+| **Tolerancia a fallos** | El bus de eventos (RabbitMQ) con colas duraderas garantiza que ningún evento se pierda incluso si consumidores están offline temporalmente. |
+| **Escalabilidad de consumidores** | Si hay 10,000 notificaciones por enviar, se pueden instanciar 5 consumidores de Notificaciones en paralelo (competidores en cola). |
+| **Propagación de eventos** | Un solo evento PedidoEntregado puede notificar a Facturación (genera factura), Notificaciones (avisa al cliente) y Analytics (actualiza métricas). |
+| **Reducción de acoplamiento** | Ruteo no necesita conocer los detalles de cómo factura o notifica. Solo publica eventos. El core domain se mantiene limpio. |
+
+### 6.3. ¿Por qué REST, GraphQL y WebSockets?
+
+| Tecnología | Uso en LogiFlow | Justificación |
+|:-----------|:----------------|:--------------|
+| **REST** | Comunicación síncrona entre microservicios internos | Estándar moderno, simple, cacheable, stateless. Ideal para operaciones CRUD y consultas de disponibilidad. OpenAPI permite documentación interactiva. |
+| **HTTP** | Integración con el sistema de taller mecánico externo | El taller externo expone APIs REST/HTTP estándar. Mantenemos compatibilidad mediante una Capa Anticorrupción que traduce el modelo externo al interno de Flota. |
+| **GraphQL** | BFF para el frontend | El frontend necesita datos agregados de múltiples servicios (Pedido + Posición + Conductor). GraphQL evita over-fetching y under-fetching. |
+| **WebSockets** | Seguimiento en tiempo real | Los clientes esperan ver la posición del vehículo en un mapa actualizándose en tiempo real. REST no es apropiado para streaming. |
+
+### 6.4. Tabla resumen de decisiones técnicas
+
+| Decisión | Alternativa descartada | Razón del descarte |
+|:---------|:----------------------|:-------------------|
+| Microservicios | Monolito | No resuelve escalabilidad ni independencia (problemas actuales) |
+| RabbitMQ | HTTP síncrono | Introduciría acoplamiento temporal y fallos en cascada |
+| Bases de datos por servicio | BD única compartida | Acoplamiento de esquemas; viola autonomía de microservicios |
+| API Gateway (Kong/Nginx) | GraphQL Gateway puro | GraphQL Gateway es BFF; en Fase 2+ se añadirá gateway tradicional para auth/routing |
+
+---
+
+## 7. Conclusión de la Fase 1
+
+El análisis DDD realizado ha permitido:
+
+1. **Comprender el dominio actual** de LogiFlow y sus problemas críticos (monolito, escalabilidad, trazabilidad, integración frágil).
+2. **Identificar el Core Domain** (Cadena de entrega: ruteo, asignación, seguimiento) donde concentrar la inversión estratégica.
+3. **Delimitar 10 Bounded Contexts** con responsabilidades claras y lenguajes ubicuos.
+4. **Definir un Context Map** con patrones Partnership, Customer/Supplier, Conformist y Anticorruption Layer.
+5. **Justificar técnicamente** el uso de microservicios, RabbitMQ, REST, GraphQL y WebSockets.
+
+La **Fase 1** implementará los pilotos técnicos de:
+- `ms-flota-rest` (contexto Flota)
+- `ms-taller-rest` (contexto Taller como ACL para integración con taller externo)
+
+demostrando la viabilidad de la arquitectura propuesta.
+
+---
+
+**Firmado**:  
+*Integrante A - Análisis y arquitectura DDD*  
+*Proyecto LogiFlow - Arquitectura de Software*  
+*Fecha: Mayo 2026*
+
+---
+
+## Apéndice A: Tabla de correspondencia problemas vs soluciones
+
+| Problema actual | Solución arquitectónica | Contexto(s) involucrado(s) |
+|:----------------|:------------------------|:---------------------------|
+| Acoplamiento extremo | Microservicios + Bounded Contexts | Todos |
+| Escalabilidad nula | Escalamiento horizontal por servicio | Ruteo, Seguimiento |
+| Falta de trazabilidad | WebSockets + eventos de posición | Seguimiento, Ruteo |
+| Asignación manual | Algoritmo automático en contexto Ruteo | Ruteo |
+| Integración frágil con taller externo | Capa Anticorrupción (ACL) | Taller, Flota |
+| Notificaciones pobres | Event-driven + múltiples canales | Notificaciones |
+| Despliegue FTP manual | CI/CD + GitHub Actions + Kubernetes | Infraestructura |
+
+## Apéndice B: Glosario unificado del dominio LogiFlow
+
+Este glosario consolida términos que aparecen en múltiples contextos:
+
+| Término | Definición unificada |
+|:--------|:---------------------|
+| **Pedido** | Solicitud de transporte desde un origen a un destino. |
+| **Envío** | Ejecución concreta de un pedido asignado a un vehículo y conductor. |
+| **Vehículo** | Recurso físico de transporte con capacidad y autonomía. |
+| **Ruta** | Secuencia planificada de paradas optimizada para eficiencia. |
+| **Posición** | Coordenada geográfica en un momento específico. |
+| **Evento** | Suceso de dominio relevante que se publica al bus de eventos. |
