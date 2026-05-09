@@ -1,0 +1,38 @@
+name: CI LogiFlow Flota
+
+on:
+  push:
+    branches: [ "development", "main" ]
+  pull_request:
+    branches: [ "development", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar con Maven
+        run: mvn clean package -DskipTests
+
+      - name: Notificar a Telegram
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            *🚀 Reporte LogiFlow - ESPE*
+            *Microservicio:* `ms-flota-rest`
+            *Estado:* `${{ job.status == 'success' && '✅ ÉXITO' || '❌ FALLO' }}`
+            *Rama:* `${{ github.ref_name }}`
+            *Autor:* Michael Coronado
