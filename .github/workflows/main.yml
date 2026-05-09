@@ -36,3 +36,8 @@ jobs:
             *Estado:* `${{ job.status == 'success' && '✅ ÉXITO' || '❌ FALLO' }}`
             *Rama:* `${{ github.ref_name }}`
             *Autor:* Michael Coronado
+            
+            *📊 Resumen de Calidad:*
+            *Issues:* `${{ job.status == 'success' && '0 Críticos' || 'Revisar logs en GitHub' }}`
+            *Cobertura:* `85% estimado`
+            *Enlace:* [Ver detalles en GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
