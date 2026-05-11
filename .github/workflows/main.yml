@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout codigo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # CRÍTICO: SonarCloud necesita el historial completo para analizar código nuevo vs viejo
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -20,9 +22,24 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Compilar con Maven
-        # Aquí es donde debe ir el cambio con el flag -f
-        run: mvn clean package -DskipTests -f ms-flota-rest/pom.xml
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build y Análisis Estático con SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub lo provee automáticamente
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # El secreto que configuró tu compañero
+        run: |
+          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=jsmena5_Proyecto-Arquitectura-LogiFlow-Coronado-Mena-Panata \
+          -Dsonar.organization=jsmena5 \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -DskipTests \
+          -f ms-flota-rest/pom.xml
 
       - name: Notificar a Telegram
         if: always()
@@ -38,7 +55,5 @@ jobs:
             *Rama:* `${{ github.ref_name }}`
             *Autor:* Michael Coronado
             
-            *📊 Resumen de Calidad:*
-            *Issues:* `${{ job.status == 'success' && '0 Críticos' || 'Revisar logs en GitHub' }}`
-            *Cobertura:* `85% estimado`
-            *Enlace:* [Ver detalles en GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            *📊 Análisis de Calidad:* SonarCloud Ejecutado
+            *Enlace:* [Ver logs de GitHub Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
