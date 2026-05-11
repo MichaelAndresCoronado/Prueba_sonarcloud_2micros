@@ -21,7 +21,8 @@ jobs:
           cache: maven
 
       - name: Compilar con Maven
-        run: mvn clean package -DskipTests
+        # Aquí es donde debe ir el cambio con el flag -f
+        run: mvn clean package -DskipTests -f ms-flota-rest/pom.xml
 
       - name: Notificar a Telegram
         if: always()
