@@ -12,6 +12,7 @@ public class ConductorResponse {
     private String dni;
     private String nombreCompleto;
     private String numeroLicencia;
+    private String tipoLicencia;
     private Boolean activo;
     private LocalDateTime createdAt;
 }

@@ -25,8 +25,11 @@ public class Conductor {
     @Column(name = "nombre_completo", nullable = false, length = 100)
     private String nombreCompleto;
 
-    @Column(name = "numero_licencia", nullable = false, unique = true, length = 20)
+    @Column(name = "numero_licencia", nullable = false, unique = true, length = 9) // Ajustado a 9
     private String numeroLicencia;
+
+    @Column(name = "tipo_licencia", nullable = false, length = 1)
+    private String tipoLicencia;
 
     @Builder.Default
     private Boolean activo = true;
@@ -36,6 +39,7 @@ public class Conductor {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
 
     @PrePersist
     protected void onCreate() {
