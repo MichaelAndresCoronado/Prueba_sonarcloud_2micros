@@ -5,7 +5,7 @@ import ec.edu.espe.logiflow.flota.dto.request.VehiculoUpdateRequest;
 import ec.edu.espe.logiflow.flota.dto.response.VehiculoResponse;
 import java.util.List;
 import java.util.UUID;
-
+//service
 public interface VehiculoService {
     VehiculoResponse createVehiculo(VehiculoCreateRequest request);
     VehiculoResponse updateVehiculo(UUID id, VehiculoUpdateRequest request);

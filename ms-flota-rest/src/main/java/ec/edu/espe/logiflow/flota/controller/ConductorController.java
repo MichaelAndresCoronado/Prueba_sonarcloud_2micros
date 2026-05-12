@@ -31,7 +31,6 @@ public class ConductorController {
         return ResponseEntity.ok(conductorService.getAllConductores());
     }
 
-    // Firma estricta: params.id + body
     @PutMapping("/{id}")
     public ResponseEntity<ConductorResponse> updateConductor(
             @PathVariable UUID id,

@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
+//Formato de respuesta
 @Data
 @Builder
 public class ConductorResponse {

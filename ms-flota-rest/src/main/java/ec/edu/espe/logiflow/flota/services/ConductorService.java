@@ -5,7 +5,7 @@ import ec.edu.espe.logiflow.flota.dto.request.ConductorUpdateRequest;
 import ec.edu.espe.logiflow.flota.dto.response.ConductorResponse;
 import java.util.List;
 import java.util.UUID;
-
+//service
 public interface ConductorService {
     ConductorResponse createConductor(ConductorCreateRequest request);
     ConductorResponse updateConductor(UUID id, ConductorUpdateRequest request);

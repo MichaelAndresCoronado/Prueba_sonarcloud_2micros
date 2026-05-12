@@ -2,7 +2,7 @@ package ec.edu.espe.logiflow.flota.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
-
+//Validaciones
 @Data
 public class ConductorCreateRequest {
 

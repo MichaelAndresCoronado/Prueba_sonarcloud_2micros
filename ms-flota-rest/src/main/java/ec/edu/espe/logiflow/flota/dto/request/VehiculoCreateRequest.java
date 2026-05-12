@@ -3,7 +3,7 @@ package ec.edu.espe.logiflow.flota.dto.request;
 import ec.edu.espe.logiflow.flota.enums.TipoVehiculo;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-
+//Validaciones
 @Data
 public class VehiculoCreateRequest {
 
