@@ -21,7 +21,7 @@ Actúa como **Anticorruption Layer (ACL)** y servicio de soporte para mantenimie
 * **Funcionalidad:** Registro de órdenes de mantenimiento y consulta de datos técnicos de vehículos.
 * **Integración:** Consume de forma síncrona al `ms-flota-restA` mediante **WebClient** para actualizar el estado del vehículo a `MANTENIMIENTO`.
 
----## 🚀 Instrucciones de Ejecución Local
+## 🚀 Instrucciones de Ejecución Local
 ### Prerrequisitos
 * Docker y Docker Compose instalados.
 * JDK 21 instalado.
@@ -60,4 +60,3 @@ El proyecto integra un flujo de Integración Continua automatizado:
 * Michael Coronado
 * Kevin Panata
 * Jhonny Mena
-
