@@ -31,6 +31,7 @@ Actúa como **Anticorruption Layer (ACL)** y servicio de soporte para mantenimie
 Desde la raíz del proyecto, ejecuta:
 ```bash
 docker-compose up -d
+```
 
 Esto creará automáticamente las bases db_logiflow_flota y db_logiflow_taller en el puerto 5433.
 
