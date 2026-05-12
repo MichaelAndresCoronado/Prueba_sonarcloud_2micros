@@ -1,46 +1,89 @@
-# LogiFlow - Microservicios listos para ejecutar
+🚚 LogiFlow – Plataforma Integral de Gestión Logística
+Este repositorio contiene la primera fase de la transformación digital de LogiFlow, migrando un sistema monolítico hacia una arquitectura de microservicios basada en Domain-Driven Design (DDD).
 
-Incluye:
+🛠️ Arquitectura y Tecnologías
+Estilo Arquitectónico: Microservicios independientes con bases de datos propias (Database per Service).
 
-1. `ms-flota-rest` en puerto `8081`
-2. `ms-taller-restdos` en puerto `8082`
-3. PostgreSQL en Docker puerto `5433`
+Backend: Java 21 con Spring Boot 3.
 
-## Levantar base de datos
+Base de Datos: PostgreSQL 16 (contenedorizado).
 
-Desde esta carpeta:
+Documentación: OpenAPI 3 / Swagger UI.
 
-```bash
-docker compose up -d
-```
+DevOps: GitHub Actions, SonarCloud y notificaciones vía Telegram.
 
-Esto crea automáticamente:
+📦 Microservicios Implementados (Fase 1)
+1. ms-flota-restA (Puerto: 8081)
+Encargado de la gestión de activos y personal operativo.
 
-- `db_logiflow_flota`
-- `db_logiflow_taller`
+Funcionalidad: CRUD completo de vehículos y conductores.
 
-## Ejecutar microservicios
+Seguridad: Validaciones estrictas de nombres (formato Capitalizado), bloqueo de tecleo errático y sanitización contra inyección SQL/XSS.
 
-Primero ejecuta `ms-flota-rest`.
-Luego ejecuta `ms-taller-restdos`.
+Endpoint de Negocio: Consulta de disponibilidad de vehículos para el contexto de ruteo.
 
-## Swagger
+2. ms-taller-restdos (Puerto: 8082)
+Actúa como Anticorruption Layer (ACL) y servicio de soporte para mantenimiento.
 
-Flota:
+Funcionalidad: Registro de órdenes de mantenimiento y consulta de datos técnicos de vehículos.
 
-```text
-http://localhost:8081/swagger-ui/index.html
-```
+Integración: Consume de forma síncrona al ms-flota-restA mediante WebClient para actualizar el estado del vehículo a MANTENIMIENTO.
 
-Taller RestDos:
+🚀 Instrucciones de Ejecución Local
+Prerrequisitos
+Docker y Docker Compose instalados.
 
-```text
-http://localhost:8082/swagger-ui/index.html
-```
+JDK 21 instalado.
 
-## Flujo recomendado
+Maven 3.9+.
 
-1. Crear vehículo en `ms-flota-rest`.
-2. Consultarlo desde `ms-taller-restdos`.
-3. Registrar orden de mantenimiento desde `ms-taller-restdos`.
-4. El taller guarda la orden en su propia base y actualiza el estado del vehículo en flota a `MANTENIMIENTO`.
+Paso 1: Levantar la Infraestructura
+Desde la raíz del proyecto, ejecuta el siguiente comando para levantar las bases de datos PostgreSQL:
+
+Bash
+docker-compose up -d
+Esto creará automáticamente las bases db_logiflow_flota y db_logiflow_taller en el puerto 5433.
+
+Paso 2: Ejecutar los Microservicios
+Ejecutar en orden (primero Flota, luego Taller):
+
+Flota: Entrar a ms-flota-restA y ejecutar mvn spring-boot:run.
+
+Taller: Entrar a ms-taller-restdos y ejecutar mvn spring-boot:run.
+
+📑 Documentación de Endpoints (Swagger)
+Accede a la documentación interactiva una vez levantados los servicios:
+
+API Flota: http://localhost:8081/swagger-ui/index.html
+
+API Taller: http://localhost:8082/swagger-ui/index.html
+
+Ejemplo de Flujo de Negocio
+POST /api/v1/vehiculos: Crear un vehículo con estado DISPONIBLE.
+
+POST /api/v1/taller/ordenes-mantenimiento: Registrar incidencia.
+
+Resultado: El taller guarda la orden y, automáticamente, el estado del vehículo en el microservicio de Flota cambia a MANTENIMIENTO.
+
+🤖 Configuración del Pipeline CI/CD
+El proyecto integra un flujo de Integración Continua automatizado:
+
+Análisis Estático: Se ejecuta SonarCloud en cada push a la rama development para asegurar la calidad del código y detectar vulnerabilidades.
+
+Notificaciones: Al finalizar el análisis, un bot de Telegram envía un reporte detallado al grupo del equipo indicando:
+
+Estado de la construcción (Éxito/Fallo).
+
+Microservicio afectado y autor del cambio.
+
+Enlace directo a los logs del análisis.
+
+Integrantes - Grupo ESPE:
+
+Michael Coronado
+
+Kevin Panata
+
+Jhonny Mena
+
+Docente: Ing. Geovanny Cudco
