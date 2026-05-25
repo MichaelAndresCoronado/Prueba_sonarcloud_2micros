@@ -1,0 +1,82 @@
+name: Pipeline Unificado SonarCloud
+
+on:
+  push:
+    branches: [ "main", "development" ]
+  pull_request:
+    branches: [ "main", "development" ]
+
+jobs:
+  # 1. COMPILACIÓN Y PRUEBAS EN PARALELO (Dibuja el nodo doble)
+  build-and-test:
+    name: Build & Test --- ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Carpetas exactas de tus dos microservicios
+        service: [ 'ms-flota-restA', 'ms-taller-restdos' ]
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar y testear microservicio
+        run: |
+          cd ${{ matrix.service }}
+          mvn clean test
+
+  # 2. ANÁLISIS DE CALIDAD (Nodo central)
+  analisis-sonarcloud:
+    name: Analisis SonarCloud
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # Analiza el microservicio de Flota
+      - name: Analizar ms-flota-restA en SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=michaelandrescoronado_ms-flota-restA \
+          -Dsonar.organization=michaelandrescoronado \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -f ms-flota-restA/pom.xml
+
+      # Analiza el microservicio de Taller
+      - name: Analizar ms-taller-restdos en SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=michaelandrescoronado_ms-taller-restdos \
+          -Dsonar.organization=michaelandrescoronado \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -f ms-taller-restdos/pom.xml
